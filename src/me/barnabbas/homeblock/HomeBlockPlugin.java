@@ -35,7 +35,7 @@ public class HomeBlockPlugin extends JavaPlugin {
      * The Plugin name, should be used as a prefix in messages to 
      * {@code console}.
      */
-    static final String PLUGIN_NAME = "[HomeSystem] ";
+    static final String PLUGIN_NAME = "[HomeBlock] ";
 
     @Override
     public void onEnable() {
@@ -65,7 +65,6 @@ public class HomeBlockPlugin extends JavaPlugin {
     }
 
     /* Database stuff */
-    
     /**
      * Sets the database up and creates one if it is not set up yet
      */
@@ -86,19 +85,20 @@ public class HomeBlockPlugin extends JavaPlugin {
     private void setupConfig() {
         FileConfiguration config = super.getConfig();
 
-        if (!config.isSet("HomeSystems")) { // config is not set yet
+        if (!config.isSet("HomeSystems")) {
             config.options().copyDefaults(true);
+
             super.saveConfig();
             console.info(PLUGIN_NAME + "config file created.");
         }
     }
-    
-    /* Block stuff */
 
+    /* Block stuff */
     /**
      * Load the blocks that are chosen by the config
      */
     private void loadBlocks() {
+
         // getting the HomeSystem names
         List<String> enabled = super.getConfig().getStringList("enabled");
 
@@ -162,60 +162,50 @@ public class HomeBlockPlugin extends JavaPlugin {
         HomeMap homeMap = new HomeMap(title, this);
 
         // getting blocks
-        
+
         // homeblock;
-        ConfigurationSection hbSection = 
+        ConfigurationSection hbSection =
                 section.getConfigurationSection("HomeBlock");
-        if (hbSection == null){ // not found!
+        if (hbSection == null) { // not found!
             throw new FormatMismatch("Could not find the HomeBlock section");
         } else {
             BlockBuilder builder = createBlockBuilder(hbSection);
             HomeBlock homeBlock = new HomeBlock(this, builder.name,
                     builder.texture, homeMap);
-            SpoutItemStack result = new SpoutItemStack(homeBlock);
-            SpoutShapedRecipe recipe = getRecipe(builder, result);
-            SpoutManager.getMaterialManager().registerSpoutRecipe(recipe);
+            loadRecipe(homeBlock, builder);
         }
-        
-        // hometeleporter
-        ConfigurationSection htSection = 
-                section.getConfigurationSection("HomeTeleporter");
-        if (htSection == null){
-            throw new FormatMismatch("Could not find the HomeTeleporter section");
-        } else {
+
+        // hometeleporter (optional)
+        if (section.isSet("HomeTeleporter")) {
+            ConfigurationSection htSection =
+                    section.getConfigurationSection("HomeTeleporter");
             BlockBuilder builder = createBlockBuilder(htSection);
             HomeTeleporter homeTele = new HomeTeleporter(this, builder.name,
                     builder.texture, homeMap);
-            SpoutItemStack result = new SpoutItemStack(homeTele);
-            SpoutShapedRecipe recipe = getRecipe(builder, result);
-            SpoutManager.getMaterialManager().registerSpoutRecipe(recipe);
+            loadRecipe(homeTele, builder);
         }
-        
+
         // randomhome (optional)
-        if (section.isSet("RandomHome")){
+        if (section.isSet("RandomHome")) {
             ConfigurationSection rhSection =
                     section.getConfigurationSection("RandomHome");
             BlockBuilder builder = createBlockBuilder(rhSection);
             RandomHomeBlock randomHome = new RandomHomeBlock(this, builder.name,
                     builder.texture, homeMap);
-            SpoutItemStack result = new SpoutItemStack(randomHome);
-            SpoutShapedRecipe recipe = getRecipe(builder, result);
-            SpoutManager.getMaterialManager().registerSpoutRecipe(recipe);
+            loadRecipe(randomHome, builder);
         }
-        
+
         // homescroll (optional)
-        if (section.isSet("HomeScroll")){
+        if (section.isSet("HomeScroll")) {
             ConfigurationSection hsSection =
                     section.getConfigurationSection("HomeScroll");
             BlockBuilder builder = createBlockBuilder(hsSection);
             HomeScroll homeScroll = new HomeScroll(this, builder.name,
                     builder.texture, homeMap);
-            SpoutItemStack result = new SpoutItemStack(homeScroll, 8);
-            SpoutShapedRecipe recipe = getRecipe(builder, result);
-            SpoutManager.getMaterialManager().registerSpoutRecipe(recipe);
+            loadRecipe(homeScroll, builder);
         }
     }
-    
+
     /**
      * Creates a Builder from the information in {@code confi}.<br>
      * {@code config} must be formatted like specified in 
@@ -227,10 +217,10 @@ public class HomeBlockPlugin extends JavaPlugin {
      * @return a BlockBuilder to create a block.
      */
     private BlockBuilder createBlockBuilder(ConfigurationSection config)
-            throws FormatMismatch{
-        
+            throws FormatMismatch {
+
         BlockBuilder builder = new BlockBuilder();
-        
+
         // getting name and texture
         String name = config.getString("name");
         if (name == null) {
@@ -240,24 +230,27 @@ public class HomeBlockPlugin extends JavaPlugin {
         if (texture == null) {
             throw new FormatMismatch("No texture found for " + config.getName());
         }
-        
+
         // setting block data
         builder.name = name;
         builder.texture = texture;
-        
+
         // setting recipe
-        ConfigurationSection recipeConfig = 
-                config.getConfigurationSection("recipe");
-        if (recipeConfig == null) {
-            throw new FormatMismatch("No recipe found for " + config.getName());
-        }
-        try {
-            getRecipeData(recipeConfig, builder);
-        } catch (FormatMismatch exception) {
-            throw new FormatMismatch("Could not create a recipe for " +
-                    config.getName() + ". Reason: " + exception.getMessage());
-        }
+        if (!config.isSet("recipe")) { // if recipe is set
+            builder.hasRecipe = false;
+        } else { // recipe is set
+            builder.hasRecipe = true;
+            ConfigurationSection recipeConfig =
+                    config.getConfigurationSection("recipe");
         
+            try {
+                getRecipeData(recipeConfig, builder);
+            } catch (FormatMismatch exception) {
+                throw new FormatMismatch("Could not create a recipe for "
+                        + config.getName() + ". Reason: " + exception.getMessage());
+            }
+        }
+
         return builder;
     }
 
@@ -282,17 +275,24 @@ public class HomeBlockPlugin extends JavaPlugin {
 
         builder.shape = shape;
 
+        // getting ammount
+        if (section.isSet("amount")) {
+            builder.amount = section.getInt("amount");
+        } else {
+            builder.amount = -1;
+        }
+
         // getting ids and names for the items
         List<String> setters = section.getStringList("set");
         builder.setters = new HashMap<Character, String>();
         if (setters != null) {
             for (String setter : setters) {
                 String[] s = setter.split("=");
-                
+
                 if (s.length != 2 || s[0].length() != 1) {
                     throw new FormatMismatch("Invalid set element: " + setter);
                 }
-                
+
                 builder.setters.put(s[0].charAt(0), s[1].trim());
             }
         }
@@ -306,12 +306,32 @@ public class HomeBlockPlugin extends JavaPlugin {
                 if (s.length != 2 || s[0].length() != 1) {
                     throw new FormatMismatch("Invalid set element: " + setter);
                 }
-                
+
                 builder.idSetters.put(s[0].charAt(0), Integer.valueOf(s[1].trim()));
             }
         }
     }
-    
+
+    /**
+     * Loads the recipe of 
+     * @param material the Material to create a recipe for
+     * @param builder the BlockBuilder containing information from the config
+     * @throws IllegalArgumentException 
+     */
+    private void loadRecipe(Material material, BlockBuilder builder) {
+        if (builder.hasRecipe) { // if there is a recipe section in builder
+            int amount;
+            if (builder.amount == -1) { // nothing set
+                amount = 1; // using default
+            } else {
+                amount = builder.amount;
+            }
+            SpoutItemStack result = new SpoutItemStack(material, amount);
+            SpoutShapedRecipe recipe = getRecipe(builder, result);
+            SpoutManager.getMaterialManager().registerSpoutRecipe(recipe);
+        }
+    }
+
     /**
      * Creates a Recipe build of the information in {@code builder} which will
      * create {@code result}.
@@ -324,58 +344,64 @@ public class HomeBlockPlugin extends JavaPlugin {
      * {@code builder} that is not a material name.
      */
     private SpoutShapedRecipe getRecipe(BlockBuilder builder, SpoutItemStack result)
-                throws IllegalArgumentException{
+            throws IllegalArgumentException {
         SpoutShapedRecipe recipe = new SpoutShapedRecipe(result);
-        
+
         // shape
         recipe.shape(builder.shape);
-        
+
         // strings
-        for (Entry<Character, String> entry: builder.setters.entrySet()){
+        for (Entry<Character, String> entry : builder.setters.entrySet()) {
             Material mat = MaterialData.getMaterial(entry.getValue());
-            
-            if (mat == null){
-                throw new IllegalArgumentException(entry.getValue() +
-                        " is not a Material.");
+
+            if (mat == null) {
+                throw new IllegalArgumentException(entry.getValue()
+                        + " is not a Material.");
             }
-            
+
             recipe.setIngredient(entry.getKey(), mat);
         }
         // ids
-        for (Entry<Character, Integer> entry: builder.idSetters.entrySet()){
+        for (Entry<Character, Integer> entry : builder.idSetters.entrySet()) {
             Material mat = MaterialData.getMaterial(entry.getValue());
-            
-            if (mat == null){
-                throw new IllegalArgumentException(entry.getValue() +
-                        " is not a Material.");
+
+            if (mat == null) {
+                throw new IllegalArgumentException(entry.getValue()
+                        + " is not a Material.");
             }
-            
+
             recipe.setIngredient(entry.getKey(), mat);
         }
-        
+
         return recipe;
     }
-    
+
     /**
      * A class that will contain the data to be able to fully create a Block.
      */
-    private static class BlockBuilder{
-        
+    private static class BlockBuilder {
+
         /**
          * The name for the block.
          */
         String name;
-        
         /**
          * The url of a texture for the block.
          */
         String texture;
-        
         /**
-         * The shape for the block
+         * If there is a recipe for this BlockBuilder
+         */
+        boolean hasRecipe;
+        /**
+         * The shape for the recipe
          */
         String[] shape;
-        
+        /**
+         * The amount each recipe should return.
+         * Value {@code -1} means there is no amount set.
+         */
+        int amount;
         /**
          * the setters for the recipe materials,
          * using names.
