@@ -1,0 +1,80 @@
+enabled:
+- normal
+- +
+- ++
+HomeSystems:
+  normal:
+    HomeBlock:
+      name: HomeBlock
+      texture: http://dev.bukkit.org/media/images/36/924/HomeBlock.png
+      recipe:
+        shape: HHH,HDH
+        set:
+        - H=Wooden Planks
+        - D=Wooden Door
+    HomeTeleporter:
+      name: HomeTeleporter
+      texture: http://dev.bukkit.org/media/images/36/925/HomeTeleporter.png
+      recipe:
+        shape: HHH,HDH
+        set:
+        - H=Wooden Planks
+        - D=Diamond
+    RandomHome:
+      name: RandomHome
+      texture: http://dev.bukkit.org/media/images/36/833/RandomHome.png
+      recipe:
+        shape: HHH,HDH
+        set:
+        - H=Wooden Planks
+        - D=Ender Pearl
+    HomeScroll:
+      name: HomeScroll
+      texture: http://dev.bukkit.org/media/images/36/925/HomeTeleporter.png
+      recipe:
+        shape: PPP,PHP,PPP
+        set:
+        - P=Paper
+        - H=HomeTeleporter
+  +:
+    HomeBlock:
+      name: HomeBlock+
+      texture: http://dev.bukkit.org/media/images/36/831/HomeBlockP.png
+      recipe:
+        shape: D D, H ,D D
+        set:
+        - D=Diamond
+        - H=HomeBlock
+    HomeTeleporter:
+      name: HomeTeleporter+
+      texture: http://dev.bukkit.org/media/images/36/832/HomeTeleporterP.png
+      recipe:
+        shape: D D, H ,D D
+        set:
+        - D=Diamond
+        - H=HomeTeleporter
+    RandomHome:
+      name: RandomHome+
+      texture: http://dev.bukkit.org/media/images/36/945/RandomHomePlus.png
+      recipe:
+        shape: D D, H ,D D
+        set:
+        - D=Diamond
+        - H=RandomHome
+  ++:
+    HomeBlock:
+      name: HomeBlock++
+      texture: http://dev.bukkit.org/media/images/36/946/HomeBlockPlusPlus.png
+      recipe:
+        shape: D D, H ,D D
+        set:
+        - D=Diamond
+        - H=HomeBlock+
+    HomeTeleporter:
+      name: HomeTeleporter++
+      texture: http://dev.bukkit.org/media/images/36/947/HomeTeleporterPlusPlus.png
+      recipe:
+        shape: D D, H ,D D
+        set:
+        - D=Diamond
+        - H=HomeTeleporter+
