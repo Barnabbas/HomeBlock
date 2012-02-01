@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.barnabbas.homeblock;
+package me.barnabbas.homeblock.material;
 
+import me.barnabbas.homeblock.HomeMap;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -19,7 +20,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
  * @author Stef van Schuylenburg
  * @since 1-dec-2011
  */
-class HomeBlock extends GenericCubeCustomBlock {
+public class HomeBlock extends GenericCubeCustomBlock {
     
     /**
      * The HomeMap to set the HomeLocations in.

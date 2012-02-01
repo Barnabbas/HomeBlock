@@ -4,6 +4,9 @@
  */
 package me.barnabbas.homeblock;
 
+import me.barnabbas.homeblock.material.RandomHomeBlock;
+import me.barnabbas.homeblock.material.HomeScroll;
+import me.barnabbas.homeblock.material.HomeTeleporter;
 import me.barnabbas.homeblock.persistence.HomeLocation;
 import me.barnabbas.homeblock.persistence.PlayersHome;
 import java.util.Arrays;
@@ -13,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 import javax.persistence.PersistenceException;
+import me.barnabbas.homeblock.material.HomeBlock;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,7 +39,7 @@ public class HomeBlockPlugin extends JavaPlugin {
      * The Plugin name, should be used as a prefix in messages to 
      * {@code console}.
      */
-    static final String PLUGIN_NAME = "[HomeBlock] ";
+    public static final String PLUGIN_NAME = "[HomeBlock] ";
 
     @Override
     public void onEnable() {
@@ -177,31 +181,53 @@ public class HomeBlockPlugin extends JavaPlugin {
 
         // hometeleporter (optional)
         if (section.isSet("HomeTeleporter")) {
+
+            // getting builder
             ConfigurationSection htSection =
                     section.getConfigurationSection("HomeTeleporter");
             BlockBuilder builder = createBlockBuilder(htSection);
+
+            // creating block
+            CooldownMap cooldownMap =
+                    CooldownMap.getCooldownMap(builder.cooldownTime);
             HomeTeleporter homeTele = new HomeTeleporter(this, builder.name,
-                    builder.texture, homeMap);
+                    builder.texture, homeMap, cooldownMap);
+
+            // creating recipe
             loadRecipe(homeTele, builder);
         }
 
         // randomhome (optional)
         if (section.isSet("RandomHome")) {
+
+            // getting builder
             ConfigurationSection rhSection =
                     section.getConfigurationSection("RandomHome");
             BlockBuilder builder = createBlockBuilder(rhSection);
+
+            // creating block
+            CooldownMap cooldownMap =
+                    CooldownMap.getCooldownMap(builder.cooldownTime);
             RandomHomeBlock randomHome = new RandomHomeBlock(this, builder.name,
-                    builder.texture, homeMap);
+                    builder.texture, homeMap, cooldownMap);
+
+            // creating recipe
             loadRecipe(randomHome, builder);
         }
 
         // homescroll (optional)
         if (section.isSet("HomeScroll")) {
+
+            // getting builder
             ConfigurationSection hsSection =
                     section.getConfigurationSection("HomeScroll");
             BlockBuilder builder = createBlockBuilder(hsSection);
+
+            // creating block
+            CooldownMap cooldownMap =
+                    CooldownMap.getCooldownMap(builder.cooldownTime);
             HomeScroll homeScroll = new HomeScroll(this, builder.name,
-                    builder.texture, homeMap);
+                    builder.texture, homeMap, cooldownMap);
             loadRecipe(homeScroll, builder);
         }
     }
@@ -235,6 +261,13 @@ public class HomeBlockPlugin extends JavaPlugin {
         builder.name = name;
         builder.texture = texture;
 
+        // setting cooldown
+        if (config.isSet("cooldown")) {
+            builder.cooldownTime = getTime(config.getString("cooldown"));
+        } else {
+            builder.cooldownTime = 0;
+        }
+
         // setting recipe
         if (!config.isSet("recipe")) { // if recipe is set
             builder.hasRecipe = false;
@@ -242,7 +275,7 @@ public class HomeBlockPlugin extends JavaPlugin {
             builder.hasRecipe = true;
             ConfigurationSection recipeConfig =
                     config.getConfigurationSection("recipe");
-        
+
             try {
                 getRecipeData(recipeConfig, builder);
             } catch (FormatMismatch exception) {
@@ -377,6 +410,46 @@ public class HomeBlockPlugin extends JavaPlugin {
     }
 
     /**
+     * Gets the time in seconds out of {@code string}, the time will be based on the last
+     * char. When it ends on {@code d, h, m or s} the number directly 
+     * before the last char will be seen as days, hours, minutes or seconds.
+     * @param string the text containing the time
+     * @return the time in seconds found in {@code string}
+     * @throws FormatMismatch if {@code string} does not contain a number or 
+     * has unknown characters.
+     */
+    private static int getTime(String string) throws FormatMismatch {
+        int timeFactor = 0;
+
+        char last = string.charAt(string.length() - 1);
+        switch (last) {
+            case 's':
+                timeFactor = 1;
+                break;
+            case 'm':
+                timeFactor = 60;
+                break;
+            case 'h':
+                timeFactor = 60 * 60;
+                break;
+            case 'd':
+                timeFactor = 60 * 60 * 24;
+                break;
+        }
+        
+        try {
+            if (timeFactor == 0) {
+                return Integer.valueOf(string);
+            } else {
+                String subString = string.substring(0, string.length() - 1);
+                return Integer.valueOf(subString) * timeFactor;
+            }
+        } catch (NumberFormatException numberFormatException) {
+            throw new FormatMismatch("could not read: " + string);
+        }
+    }
+
+    /**
      * A class that will contain the data to be able to fully create a Block.
      */
     private static class BlockBuilder {
@@ -389,6 +462,10 @@ public class HomeBlockPlugin extends JavaPlugin {
          * The url of a texture for the block.
          */
         String texture;
+        /**
+         * The time in seconds needed to do an action after a previous action
+         */
+        int cooldownTime;
         /**
          * If there is a recipe for this BlockBuilder
          */

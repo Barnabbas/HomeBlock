@@ -31,7 +31,9 @@ HomeSystems:
     HomeScroll:
       name: HomeScroll
       texture: http://dev.bukkit.org/media/images/36/925/HomeTeleporter.png
+      cooldown: 30m
       recipe:
+        amount: 8
         shape: PPP,PHP,PPP
         set:
         - P=Paper

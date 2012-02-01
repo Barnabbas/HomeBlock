@@ -2,10 +2,13 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.barnabbas.homeblock;
+package me.barnabbas.homeblock.material;
 
 import java.util.List;
 import java.util.Random;
+import me.barnabbas.homeblock.CooldownMap;
+import me.barnabbas.homeblock.HomeBlockPlugin;
+import me.barnabbas.homeblock.HomeMap;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -35,6 +38,11 @@ public class RandomHomeBlock extends GenericCubeCustomBlock {
     private final HomeMap homeMap;
     
     /**
+     * The CooldownMap used for cooldown times
+     */
+    private final CooldownMap cooldownMap;
+    
+    /**
      * The Random used to choose a Home to teleport to
      */
     private final Random random;
@@ -45,12 +53,16 @@ public class RandomHomeBlock extends GenericCubeCustomBlock {
      * @param plugin the Plugin using this RandomHomeBlock
      * @param name the name of the item
      * @param texture the url of the texture
-     * @param homeMap the HomeMap to use (currently doesnt matter which one :\)
+     * @param homeMap the HomeMap to use
+     * @param cooldownMap the CooldownMap for the cooldown effect
      */
-    public RandomHomeBlock(Plugin plugin, String name, String texture, HomeMap homeMap){
+    public RandomHomeBlock(Plugin plugin, String name, String texture,
+            HomeMap homeMap, CooldownMap cooldownMap){
         super(plugin, name, texture, 16);
         
         this.homeMap = homeMap;
+        this.cooldownMap = cooldownMap;
+        
         random = new Random();
     }
 
@@ -65,6 +77,16 @@ public class RandomHomeBlock extends GenericCubeCustomBlock {
      */
     @Override
     public boolean onBlockInteract(World world, int x, int y, int z, SpoutPlayer player) {
+        
+        // checking for cool down
+        if (!cooldownMap.isEnabled(player)){
+            int time = cooldownMap.getTime(player);
+            player.sendMessage(HomeBlockPlugin.PLUGIN_NAME + " action ready in "
+                    + time + " seconds.");
+            return false;
+        }
+        
+        // cooldownMap is enabled for player
         
         world.playEffect(new Location(world, x, y, z), Effect.GHAST_SHOOT, 1);
         
@@ -87,6 +109,9 @@ public class RandomHomeBlock extends GenericCubeCustomBlock {
             // teleporting
             home.add(TELEPORT_VECTOR);
             player.teleport(home);
+            
+            // restarting cooldown time
+            cooldownMap.start(player);
         }
         
         return true;

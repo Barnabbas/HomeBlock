@@ -2,8 +2,11 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.barnabbas.homeblock;
+package me.barnabbas.homeblock.material;
 
+import me.barnabbas.homeblock.CooldownMap;
+import me.barnabbas.homeblock.HomeBlockPlugin;
+import me.barnabbas.homeblock.HomeMap;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -31,6 +34,11 @@ public class HomeScroll extends GenericCustomItem {
     private final HomeMap homeMap;
     
     /**
+     * The CooldownMap used for cooldown times
+     */
+    private final CooldownMap cooldownMap;
+    
+    /**
      * The Vector that should be added to the home location to teleport atop of
      * the block.
      */
@@ -43,11 +51,13 @@ public class HomeScroll extends GenericCustomItem {
      * @param name the name of the HomeScroll
      * @param texture the url for the texture of this Item
      * @param homeMap the HomeMap to get the Home from.
+     * @param cooldownMap the CooldownMap for the cooldown effect
      */
     public HomeScroll(Plugin plugin, String name, String texture,
-            HomeMap homeMap) {
+            HomeMap homeMap, CooldownMap cooldownMap) {
         super(plugin, name, texture);
         this.homeMap = homeMap;
+        this.cooldownMap = cooldownMap;
     }
 
     /**
@@ -65,7 +75,7 @@ public class HomeScroll extends GenericCustomItem {
 
         if (home == null) { // no home is found
             return false;
-        } else { // player is going home...
+        } else if (cooldownMap.isEnabled(player)) { // player is going home...
             // taking item away
             player.setItemInHand(consume(player.getItemInHand(), 1, this));
 
@@ -77,7 +87,15 @@ public class HomeScroll extends GenericCustomItem {
             home.add(TELEPORT_VECTOR);
             player.teleport(home);
             
+            // starting cooldown timer
+            cooldownMap.start(player);
+            
             return true;
+        } else { // not cooled down yet
+            int time = cooldownMap.getTime(player);
+            player.sendMessage(HomeBlockPlugin.PLUGIN_NAME + " action ready in "
+                    + time + " seconds.");
+            return false;
         }
 
     }

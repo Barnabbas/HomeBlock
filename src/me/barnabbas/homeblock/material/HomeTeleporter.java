@@ -2,9 +2,11 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.barnabbas.homeblock;
+package me.barnabbas.homeblock.material;
 
-import java.util.Random;
+import me.barnabbas.homeblock.CooldownMap;
+import me.barnabbas.homeblock.HomeBlockPlugin;
+import me.barnabbas.homeblock.HomeMap;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -34,9 +36,9 @@ public class HomeTeleporter extends GenericCubeCustomBlock {
     private final HomeMap homeMap;
     
     /**
-     * A Random used to decided where to teleport to when no Home is set.
+     * The CooldownMap used for cooldown times
      */
-    private final Random random = new Random();
+    private final CooldownMap cooldownMap;
     
     /**
      * Creates a new HomeTeleporter that will teleport a Player to his Home
@@ -46,12 +48,14 @@ public class HomeTeleporter extends GenericCubeCustomBlock {
      * @param name the Name of the block
      * @param texture the texture for this Block
      * @param homeMap the HomeMap to retrieve Home Locations from.
+     * @param cooldownMap the CooldownMap for the cooldown effect
      */
     public HomeTeleporter(Plugin plugin, String name, String texture,
-            HomeMap homeMap){
+            HomeMap homeMap, CooldownMap cooldownMap){
         super(plugin, name, texture, 16);
         
         this.homeMap = homeMap;
+        this.cooldownMap = cooldownMap;
         
         this.setLightLevel(5);
     }
@@ -70,6 +74,16 @@ public class HomeTeleporter extends GenericCubeCustomBlock {
     public boolean onBlockInteract(World world, int x, int y, int z,
             SpoutPlayer player) {
         
+        // checking for cool down
+        if (!cooldownMap.isEnabled(player)){
+            int time = cooldownMap.getTime(player);
+            player.sendMessage(HomeBlockPlugin.PLUGIN_NAME + " action ready in "
+                    + time + " seconds.");
+            return false;
+        }
+        
+        // cooldownMap is enabled for player
+        
         world.playEffect(new Location(world, x, y, z), Effect.GHAST_SHOOT, 1);
         
         // players home
@@ -84,9 +98,12 @@ public class HomeTeleporter extends GenericCubeCustomBlock {
         
         
         if (home != null){ // home is set
-            
             home.add(TELEPORT_VECTOR); // setting above HomeBlock
             player.teleport(home);
+            
+            // starting cooldown timer
+            cooldownMap.start(player);
+            
         } else { // home is not set
             
             // teleporting right atop of this Block
